@@ -1,0 +1,23 @@
+--1
+explain plan
+FOR SELECT /*+ use_nl(h e) use_hash(d) */ * FROM history h
+JOIN employees e ON e.empno = h.empno
+JOIN departments d ON e.deptno = d.deptno;
+SELECT plan_table_output FROM TABLE(dbms_xplan.display);
+
+
+
+
+--2
+exec dbms_stats.gather_schema_stats('book')
+
+
+
+--3
+SELECT DISTINCT department_id
+FROM departments
+WHERE NOT EXISTS (
+SELECT *
+FROM employees
+WHERE  departments.department_id = employees.department_id)
+ORDER BY department_id 

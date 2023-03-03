@@ -1,0 +1,77 @@
+
+--1вывести список всех сотрудников через зап€тую ( табл  employees), у которых один и тот же менеждер
+select * from employees;
+SELECT DISTINCT manager_id, (LISTAGG(first_name||' '||last_name, ', ') WITHIN GROUP (ORDER BY manager_id) OVER (PARTITION BY manager_id)) empl FROM employees
+WHERE manager_id IN (
+SELECT DISTINCT manager_id FROM employees
+GROUP BY manager_id
+HAVING COUNT(*) > 2)
+ORDER BY manager_id
+
+
+--2 ќпределить дл€ каждого сотрудника периоды непрерывного стажа
+SELECT DISTINCT last_name, SUM(((EXTRACT(YEAR FROM end_date)*12)+EXTRACT(MONTH FROM end_date))- ((EXTRACT(YEAR FROM start_date)*12)+EXTRACT(MONTH FROM start_date)))
+OVER(PARTITION BY last_name) AS —таж 
+FROM contracts
+
+
+
+--3 ƒл€ каждого сотрудника из таблицы EMPLOYEES 
+	a. ѕоказать last name первого сотрудника нан€того в тот же год
+	b. ѕоказать last name последнего сотрудника нан€того в тот же год
+	c. в дополнение с первым двум пунктам показать полные имена сотрудников
+
+SELECT DISTINCT last_name||' '||first_name as full_name , MIN(hire_date) OVER (PARTITION BY EXTRACT(YEAR FROM hire_date))
+FROM employees
+
+
+SELECT DISTINCT last_name||' '||first_name as full_name , MAX(hire_date) OVER (PARTITION BY EXTRACT(YEAR FROM hire_date))
+FROM employees
+
+
+SELECT first_name||' '||last_name as full_name,hire_date, ft, empl FROM employees e
+JOIN (SELECT DISTINCT ft, empl
+FROM
+(
+SELECT DISTINCT hire_date,MIN(hire_date) OVER (PARTITION BY EXTRACT(YEAR FROM hire_date)) as ft
+,LISTAGG(first_name||' '||last_name, ', ') WITHIN GROUP (ORDER BY hire_date) OVER (PARTITION BY hire_date) empl FROM employees)
+WHERE hire_date = ft) a ON EXTRACT(YEAR FROM e.hire_date) = EXTRACT(YEAR FROM a.ft)
+
+
+SELECT first_name||' '||last_name as full_name,hire_date, ft, empl FROM employees e
+JOIN (SELECT DISTINCT ft, empl
+FROM
+(
+SELECT DISTINCT hire_date,MAX(hire_date) OVER (PARTITION BY EXTRACT(YEAR FROM hire_date)) as ft
+,LISTAGG(first_name||' '||last_name, ', ') WITHIN GROUP (ORDER BY hire_date) OVER (PARTITION BY hire_date) empl FROM employees)
+WHERE hire_date = ft) a ON EXTRACT(YEAR FROM e.hire_date) = EXTRACT(YEAR FROM a.ft)
+
+
+
+--4  ¬ывести 20% сотрудников с наименьшей зарплатой.
+SELECT full_name, salary
+FROM (
+SELECT (first_name||' '||last_name) as full_name, salary 
+FROM employees
+ORDER BY salary)
+WHERE ROWNUM < (SELECT COUNT(*)/5 FROM employees)
+
+
+--5 ¬ывести по 5 самых высокооплачиваемых сотрудников в отделе, среднюю зарплату по отделу, среднюю зарплату по отделу дл€ выбранных сотрудников
+SELECT last_name ,salary,department_id,avg_dep, AVG(salary) OVER(PARTITION BY department_id) as avgtop_dep FROM(SELECT * FROM
+(SELECT  last_name ,salary, RANK() OVER (PARTITION BY department_id ORDER BY salary DESC) as rank, AVG(salary) OVER(PARTITION BY department_id) as avg_dep , department_id
+FROM employees)
+WHERE rank <= 5
+ORDER BY department_id)
+
+
+
+--6 
+6. ƒл€ каждого сотрудника вывести кто был прин€т до него, и кто после, по отделам
+SELECT DISTINCT last_name, hire_date, LAG(last_name)OVER(PARTITION BY department_id ORDER BY hire_date) AS next_empl ,LEAD(last_name)OVER(PARTITION BY department_id ORDER BY hire_date) AS early_empl ,salary,department_id FROM employees
+ORDER BY hire_date
+
+
+
+--7 ƒл€ задачи 3 вывести результаты вертикально
+UNPIVOT

@@ -1,0 +1,54 @@
+--Количество всех опазданий 
+SELECT 
+CASE 
+WHEN EXTRACT(HOUR FROM ATIME) > 8 AND reader = 1 
+THEN cardnum
+END as late , COUNT(*)
+FROM PAK
+WHERE ATIME IN (
+SELECT MIN(ATIME) 
+FROM PAK
+WHERE reader = 1
+GROUP BY EXTRACT(DAY FROM ATIME), cardnum
+) AND 
+CASE 
+WHEN EXTRACT(HOUR FROM ATIME) > 8 AND reader = 1 
+THEN cardnum
+END IS NOT NULL
+GROUP BY (CASE 
+WHEN EXTRACT(HOUR FROM ATIME) > 8 AND reader = 1 
+THEN cardnum
+END)
+
+--Сумма всех опазданий
+SELECT cardnum, SUM(
+CASE 
+WHEN EXTRACT(HOUR FROM ATIME) > 8 AND reader = 1 
+THEN (((EXTRACT(HOUR FROM ATIME)-9)*60)+ EXTRACT(MINUTE FROM ATIME))
+END) as late 
+FROM PAK
+WHERE ATIME IN (
+SELECT MIN(ATIME) 
+FROM PAK
+WHERE reader = 1
+GROUP BY EXTRACT(DAY FROM ATIME), cardnum
+) AND 
+CASE 
+WHEN EXTRACT(HOUR FROM ATIME) > 8 AND reader = 1 
+THEN (((EXTRACT(HOUR FROM ATIME)-9)*60)+ EXTRACT(MINUTE FROM ATIME))
+END IS NOT NULL
+GROUP BY cardnum
+
+
+--Время проведенное на работе
+SELECT a.cardnum,TRUNC((b.mnt - a.mnt)/60)||' Hours and '||MOD((b.mnt - a.mnt),60)|| ' minutes'
+FROM((SELECT EXTRACT(DAY FROM ATIME) as dy, cardnum, reader, SUM(EXTRACT(HOUR FROM ATIME) * 60 + EXTRACT(MINUTE FROM ATIME)) as mnt
+FROM PAK
+WHERE alarm = 0 AND reader = 1
+GROUP BY EXTRACT(DAY FROM ATIME), cardnum, reader) a
+JOIN
+(SELECT EXTRACT(DAY FROM ATIME) as dy, cardnum, reader, SUM(EXTRACT(HOUR FROM ATIME) * 60 + EXTRACT(MINUTE FROM ATIME)) as mnt
+FROM PAK
+WHERE alarm = 0 AND reader = 2
+GROUP BY EXTRACT(DAY FROM ATIME), cardnum, reader) b ON a.dy = b.dy AND a.cardnum = b.cardnum)
+

@@ -1,0 +1,37 @@
+DROP PROCEDURE find_name;
+CREATE OR REPLACE PROCEDURE find_name (tab_name IN VARCHAR2, value_serch VARCHAR2)IS
+    row_name VARCHAR2(50);
+    i NUMBER;
+    cnt NUMBER;
+    vSQL VARCHAR2(256);
+BEGIN
+        i := 1;
+         SELECT MAX(ROWNUM) INTO   cnt
+            FROM USER_TAB_COLS
+            WHERE TABLE_NAME = tab_name ;
+    LOOP            
+      SELECT column_name INTO  row_name
+            FROM (
+                SELECT column_name, ROWNUM as rn
+                    FROM USER_TAB_COLS
+                    WHERE TABLE_NAME = tab_name)
+            WHERE  rn= i;
+   
+    vSQL :=  'SELECT :row_name
+        FROM '||tab_name||'
+        WHERE :row_name = :value_serch';
+     EXECUTE IMMEDIATE vSQL USING row_name, value_serch;
+     EXIT WHEN cnt = i;
+     i := i + 1;
+     END LOOP;
+END;
+
+SELECT column_name
+            FROM (SELECT column_name, ROWNUM as rn
+            FROM USER_TAB_COLS
+            WHERE TABLE_NAME = 'EMPLOYEES')
+            WHERE  rn =5;
+BEGIN
+    find_name('EMPLOYEES','King');
+END;
+ 

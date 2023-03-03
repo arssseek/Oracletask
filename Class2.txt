@@ -1,0 +1,149 @@
+С помощью дерева и с помощью рекурсивного запроса:
+  а. отобразить все маршруты из города Москва
+  б. найти минимальный(по километражу) путь из Москвы в Выборг
+
+  добавить зацикленность
+  INSERT INTO route VALUES ( 'Новгород', 'Выборг', 135 );
+  commit;
+  и повторить а) и б)
+--6
+--a
+SELECT SYS_CONNECT_BY_PATH(node, '<') as Path
+FROM route
+START WITH parent = 'Москва'
+CONNECT BY NOCYCLE PRIOR node = parent
+
+
+
+--b
+
+
+
+Выберите 3 самых продолжительных периода работы воспользовавшись таблицей историй работ(JOB_HISTORY)
+Нужна таблица: JOB_HISTORY
+--7
+SELECT start_date, end_date
+FROM(SELECT start_date, end_date, ROWNUM AS rn
+FROM (SELECT start_date, end_date FROM job_history ORDER BY start_date - end_date))
+WHERE rn <= 3
+
+Ваше приложение показывает наиболее оплачиваемых сотрудников по 10 человек на странице.
+Люди с равной зарплатой упорядочены по фамилии.
+Надо написать запрос для отображения второй страницы.
+Нужные таблицы: employees
+
+--8
+SELECT last_name, salary, rn
+FROM(SELECT last_name, salary, ROWNUM AS rn
+FROM (SELECT last_name, salary FROM employees ORDER BY salary, last_name DESC))
+WHERE rn > 10 and rn <= 20
+
+Найдите месяц, в который было нанято больше всего людей в нашей компании.
+Примите во внимание работающих людей и историю.
+Таблицы: employees, job_history
+--9
+WITH sup as (SELECT mon, SUM(Coun) as Worker
+FROM(
+SELECT EXTRACT(MONTH FROM hire_date)as mon, COUNT(*) as Coun
+FROM employees
+GROUP BY EXTRACT(MONTH FROM hire_date)
+UNION
+SELECT EXTRACT(MONTH FROM start_date)as mon, COUNT(*) as Coun
+FROM job_history
+GROUP BY EXTRACT(MONTH FROM start_date)
+)
+GROUP BY mon) 
+
+SELECT mon, Worker
+FROM sup
+
+WHERE Worker = (SELECT MAX(Worker)FROM sup)
+;
+
+Для всех работников родившихся в июне(любой год) напечать строку вида 'John Doe was hired on DD.MM.YYYY'
+Нужные таблицы: employees
+пример:
+Steven King was hired on 17.06.2003
+--10
+SELECT (first_name ||' '|| last_name || ' was hired on ' || to_char(hire_date,'DD/MM/YYYY')) as one_str
+FROM employees
+WHERE EXTRACT(MONTH FROM hire_date) = 6;
+
+Перечислите полные имена сотрудников и их номера телефонов в «зашифрованном» формате.
+Формат:
+без точек, только цифры;
+каждая цифра должна быть заменена по формуле F (d) = MOD (d + 5,10)
+Например , F(1) = 6, F(7) = 2.
+Нужные таблицы: employees
+
+пример вывода:
+FULL_NAME  PHONE_NUMBER  ENCODED_PHONE
+Steven King  515.123.4567  0606789012
+Neena Kochhar  515.123.4568  0606789013
+
+PS: воспользуйтесь функцией TRANSLATE
+--11
+SELECT (first_name ||' '|| last_name ) as FULL_NAME, phone_number, TRANSLATE(phone_number, '0123456789.','5678901234') as ENCODED_PHONE
+FROM employees
+WHERE EXTRACT(MONTH FROM hire_date) = 6;
+
+
+Выберите количество уникальных job_ids в таблице EMPLOYEES.
+--12
+SELECT COUNT(*)
+FROM (SELECT DISTINCT job_id FROM employees)
+
+
+ыведите полные имена сотрудников, которые работали в качестве "Public Accountant" на '01-12-2000'
+Нужны таблицы: employees, job_history, jobs
+--13
+SELECT DISTINCT (FIRST_NAME ||' '|| LAST_NAME) as FULL_NAME
+FROM employees
+JOIN job_history ON employees.job_id = job_history.job_id 
+JOIN jobs ON job_history.job_id = jobs.job_id
+WHERE JOB_TITLE = 'Public Accountant' AND START_DATE < TO_DATE('01-12-2000','DD-MM-YYYY')
+
+
+Выберите отделы которые имеют более 10 сотрудников или общую зарплату> 30000.
+Вывод в виде: department_id, кол-во работников, сумма_ЗП_по_отделу
+Таблица: EMPLOYEES
+--14
+SELECT department_id, COUNT(*), SUM(salary)
+FROM employees
+GROUP BY department_id
+HAVING SUM(salary) > 30000 or COUNT(*) > 10
+ORDER BY department_id
+
+
+Найдите всех работающих в настоящее время сотрудников, которые ранее занимали как минимум две другие должности (две записи в JOB_HISTORY).
+Нужны таблицы: employees, job_history
+--15
+SELECT (first_name||' '||last_name) as FULL_NAME, COUNT(*)
+FROM (SELECT *FROM employees
+LEFT OUTER JOIN job_history ON  employees.employee_id = job_history.employee_id)
+GROUP BY first_name||' '||last_name
+HAVING COUNT(*) > 1
+
+
+Перечислите все отделы, в которых нет сотрудников, тремя способами:
+a)Используя NOT IN subquery.
+b)Используя NOT EXISTS subquery.
+c)Используя JOIN
+Таблицы: departments, employees
+--16
+--а
+SELECT department_id
+FROM departments
+WHERE department_id NOT IN
+(
+SELECT department_id
+FROM employees
+WHERE (employees.department_id in departments.department_id) AND employees.department_id IS NOT NULL)
+GROUP BY department_id
+ORDER BY department_id;
+
+--b
+
+
+--с
+

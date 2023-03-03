@@ -1,0 +1,112 @@
+ALTER TABLE empl
+  ADD
+    User_name VARCHAR2(50),
+    Time_insert TIMESTAMP);
+
+CREATE VIEW e_view
+AS SELECT FULL_NAME, PHONE_NUMBER, BIRTHDAY, FLOOR FROM empl;
+
+/*CREATE OR REPLACE TRIGGER Log_insert
+    BEFORE INSERT OR UPDATE OF FULL_NAME, PHONE_NUMBER, BIRTHDAY, FLOOR ON empl
+    FOR EACH ROW
+    DECLARE
+      User_name_tri  VARCHAR2(50);
+      
+BEGIN
+    SELECT user INTO User_name_tri FROM dual;
+    UPDATE empl
+        SET time_insert = SYSDATE, user_name = user_name_tri
+    WHERE full_name = :NEW.Full_name;
+END*/
+
+DROP TRIGGER Log_insert_update;
+CREATE OR REPLACE TRIGGER Log_insert_update
+    INSTEAD OF INSERT ON e_view    
+    FOR EACH ROW
+    DECLARE
+      User_name_tri  VARCHAR2(50);       
+BEGIN
+    SELECT user INTO User_name_tri FROM dual;
+    INSERT INTO empl VALUES (NEW.FULL_NAME, NEW.PHONE_NUMBER, NEW.BIRTHDAY, NEW.FLOOR,User_name_tri ,SYSDATE);
+END;
+
+-----------------------------------------------------------------Ошибки 
+
+
+
+CREATE MATERIALIZED VIEW Work_for_month 
+REFRESH
+COMPLETE
+NEXT SYSDATE + NUMTODSINTERVAL(1, 'DAY')
+AS
+SELECT DISTINCT a.dy, a.cardnum, 
+CASE
+    WHEN b.mnt - a.mxt < 0 THEN TRUNC((b.mnt - a.mxt )/60 + 21)||' Hours and '||MOD((b.mnt - a.mxt + 1260),60)|| ' minutes'
+    WHEN b.mnt - a.mxt = 0 THEN 'lazy person'
+    ELSE TRUNC((b.mnt - a.mxt)/60)||' Hours and '||MOD((b.mnt - a.mxt),60)|| ' minutes'
+END AS Timee
+FROM((
+    SELECT EXTRACT(DAY FROM ATIME) as dy, cardnum, reader, SUM(
+        CASE
+            WHEN EXTRACT(HOUR FROM ATIME) < 9 THEN 540
+            WHEN EXTRACT(HOUR FROM ATIME) > 20 THEN 1260
+            ELSE ((EXTRACT(HOUR FROM ATIME)*60)+ EXTRACT(MINUTE FROM ATIME))
+        END)
+        OVER(PARTITION BY EXTRACT(DAY FROM ATIME), cardnum, reader) as mxt
+    FROM PAK
+    WHERE alarm = 0 AND reader = 1) a
+JOIN
+    (SELECT EXTRACT(DAY FROM ATIME) as dy, cardnum, reader, SUM(
+        CASE
+            WHEN EXTRACT(HOUR FROM ATIME) < 9 THEN 0
+            WHEN EXTRACT(HOUR FROM ATIME) > 20 THEN 1260
+            ELSE ((EXTRACT(HOUR FROM ATIME)*60)+ EXTRACT(MINUTE FROM ATIME))
+        END)
+        OVER(PARTITION BY EXTRACT(DAY FROM ATIME), cardnum, reader) as mnt
+    FROM PAK
+    WHERE alarm = 0 AND reader = 2) b 
+ON a.dy = b.dy AND a.cardnum = b.cardnum);
+
+
+
+
+CREATE OR REPLACE TRIGGER Nakazanie
+    INSTEAD OF UPDATE ON opazdun   
+    FOR EACH ROW   
+BEGIN
+       UPDATE PAK
+       SET Opozdanie = :NEW.Opozdanie
+       WHERE ATIME = :NEW.ATIME;
+END;
+
+DROP VIEW opazdun;
+CREATE VIEW Opazdun AS 
+SELECT * FROM (
+    SELECT 
+    CASE 
+        WHEN EXTRACT(HOUR FROM ATIME) > 8 AND reader = 1  THEN cardnum
+END as late , ATIME , opozdanie
+FROM PAK
+WHERE ATIME IN (
+    SELECT MIN(ATIME) OVER (PARTITION BY EXTRACT(DAY FROM ATIME), cardnum)
+    FROM PAK
+WHERE reader = 1 AND EXTRACT(HOUR FROM atime) > 6
+) AND ( 
+CASE 
+    WHEN EXTRACT(HOUR FROM ATIME) > 8 AND reader = 1 THEN cardnum
+END IS NOT NULL)
+)
+WHERE late = 707;
+
+
+
+
+
+
+
+
+
+
+
+
+

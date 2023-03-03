@@ -1,0 +1,86 @@
+create table T_SALES
+( trn_date DATE,
+  n_client VARCHAR2(50),
+  amt NUMBER 
+);
+
+create table T_DISCOUNT
+( n_client VARCHAR2(50),
+  full_amt NUMBER, 
+  last_buy DATE, 
+  amt NUMBER, 
+  proc_discount NUMBER 
+)
+
+DECLARE
+i NUMBER;
+BEGIN
+FOR i IN 1..6500
+LOOP
+INSERT INTO t_sales VALUE
+SELECT SYSDATE - TRUNC(DBMS_RANDOM.VALUE(1,61)) , first_name||' '||last_name, TRUNC(DBMS_RANDOM.VALUE(7,7777))
+FROM employees;
+END LOOP;
+END;
+
+
+
+
+
+
+
+CREATE OR REPLACE PROCEDURE INSERT_PROCED IS
+    i NUMBER;
+    TYPE salelist IS TABLE OF NUMBER;
+    SALE salelist;
+    TYPE datelist IS TABLE OF DATE;
+    lastdate datelist;
+    TYPE namelist IS TABLE OF VARCHAR2;
+    client_name namelist;
+    TYPE sumlist IS TABLE OF NUMBER;
+    sumcount sumlist;
+    TYPE sumonthlist IS TABLE OF NUMBER;
+    sumonthcount sumlist;
+    count_limit NUMBER;
+    listname namelist;
+        BEGIN 
+            i := 0;
+            SELECT DISTINCT COUNT(*) BULK COLLECT INTO count_limit FROM t_sales;
+            SELECT DISTINCT n_client BULK COLLECT INTO listname FROM t_sales;
+            LOOP
+                SELECT 
+                    CASE 
+                        WHEN SUM(amt) OVER (PARTITION BY n_client) < 1000 THEN 0
+                        WHEN SUM(amt) OVER (PARTITION BY n_client) > 1000 AND SUM(amt) OVER (PARTITION BY n_client) < 10000 THEN 2
+                        WHEN SUM(amt) OVER (PARTITION BY n_client) > 10000 AND SUM(amt) OVER (PARTITION BY n_client) < 50000 THEN 4
+                        WHEN SUM(amt) OVER (PARTITION BY n_client) > 50000 THEN 7                     
+                    END 
+                    BULK COLLECT INTO SALE(i)
+                FROM t_sales WHERE n_client = listname(i) AND trn_date > SYSDATE - EXTRACT(DAY FROM SYSDATE) - NUMTOYMINTERVAL(1, 'month') ;
+                
+                SELECT MAX(trn_date) OVER (PARTITION BY n_client)
+                    BULK COLLECT INTO lastdate(i)
+                FROM t_sales WHERE n_client = listname(i);
+                
+                SELECT DISTINCT n_client
+                    BULK COLLECT INTO client_name(i)
+                FROM t_sales WHERE n_client = listname(i) ;
+                
+                SELECT SUM(amt) OVER (PARTITION BY n_client)
+                    BULK COLLECT INTO sumcount(i)
+                FROM t_sales WHEREn_client = listname(i) ;
+                
+                SELECT SUM(amt) OVER (PARTITION BY n_client)
+                    BULK COLLECT INTO sumonthcount(i)
+                FROM t_sales WHERE n_client = listname(i) AND trn_date > SYSDATE - EXTRACT(DAY FROM SYSDATE) - NUMTOYMINTERVAL(1, 'month') ;
+                
+                EXIT WHEN i = count_limit;
+                i := i + 1;
+            END LOOP;
+            i := 1;
+            LOOP 
+            INSERT INTO t_discount VALUES (client_name(i),sumcount(i),lastdate(i),sumonthcount(i),SALE(i));
+            EXIT WHEN i = count_limit;
+                i := i + 1;
+            END LOOP;
+END;

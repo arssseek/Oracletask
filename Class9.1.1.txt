@@ -1,0 +1,118 @@
+1)
+SELECT first_name, last_name, salary , AVG(salary) OVER(PARTITION BY job_id), 
+        AVG(salary) OVER(PARTITION BY employee_id), AVG(salary) OVER(PARTITION BY department_id)
+FROM employees 
+
+
+
+2)
+SELECT hire_date, RANK() OVER (PARTITION BY department_id ORDER BY hire_date) - 1 AS Count_befor
+    FROM employees
+        
+
+
+
+3)
+SELECT hire_date, salary, (LEAD(salary,1) OVER (ORDER BY hire_date) +
+    LEAD(salary,2)OVER (ORDER BY hire_date) +
+    LAG (salary,1) over (ORDER BY hire_date) +
+    LAG (salary,2) over (ORDER BY hire_date) + salary)/ 5 AS avgsal FROM employees
+
+
+
+
+
+4)
+SELECT first_name||' '||last_name as full_name,hire_date, first_date, first_empl, last_date, last_empl FROM employees e
+    JOIN (SELECT DISTINCT first_date, first_empl
+    FROM
+    (
+    SELECT DISTINCT hire_date,
+        MAX(hire_date) OVER (PARTITION BY EXTRACT(YEAR FROM hire_date)) as first_date
+        ,LISTAGG(first_name||' '||last_name, ', ') WITHIN GROUP (ORDER BY hire_date) OVER (PARTITION BY hire_date) first_empl FROM employees)
+        WHERE hire_date = first_date) a ON EXTRACT(YEAR FROM e.hire_date) = EXTRACT(YEAR FROM a.first_date)
+    JOIN (SELECT DISTINCT last_date, last_empl
+    FROM
+    (
+    SELECT DISTINCT hire_date,
+        MIN(hire_date) OVER (PARTITION BY EXTRACT(YEAR FROM hire_date)) as last_date
+        ,LISTAGG(first_name||' '||last_name, ', ') WITHIN GROUP (ORDER BY hire_date) OVER (PARTITION BY hire_date) last_empl FROM employees)
+        WHERE hire_date = last_date) a ON EXTRACT(YEAR FROM e.hire_date) = EXTRACT(YEAR FROM a.last_date)
+
+    
+
+
+
+
+7) Решение не мое, какой же ужас, можно ли это упростить в раз так 5)
+with brackets as
+(select '[[)]([][][][[()[()[()()]]]])]' b 
+   from dual) , 
+all_brackets as 
+(select substr(b,level,1) q,
+        level     curr_pos,
+        level - 1 prev_pos 
+   from brackets
+connect by substr(b,level,1) is not null),
+brackets_comb as 
+(select replace(sys_connect_by_path(q,'-'), '-') str,      
+        q,              
+        connect_by_root(curr_pos) start_pos,
+        curr_pos                  end_pos,
+        sum( case
+             when (q = '(' or q = '[')
+              and (prior q is null)
+             then 1                        
+             when (q = '(' or q = '[')
+              and (prior q = '(' or prior q = '[')
+             then 1                          
+             when (q = '(' or q = '[')
+              and (prior q = ']' or prior q = ')')
+             then 0                           
+             when (q = ')' or q = ']') 
+              and (prior q = '(' or prior q = '[')
+             then 0                     
+             when (q = ')' or q = ']') 
+              and (prior q = ')' or prior q = ']')
+             then -1
+              end)
+       over (partition by connect_by_root(curr_pos) 
+                 order by connect_by_root(curr_pos), curr_pos)  bracket_level                            
+   from all_brackets
+  connect by prior curr_pos = prev_pos
+   start with q = '(' or q = '[') 
+select start_pos,
+       end_pos, 
+       str,
+       case 
+        when q = ')' 
+         and lag(q) over (partition by start_pos, bracket_level 
+                              order by start_pos, bracket_level, end_pos) = '('
+        then 'ok'
+        when q = '(' 
+         and lag(q) over (partition by start_pos, bracket_level 
+                              order by start_pos, bracket_level, end_pos) = ')'
+        then 'ok'
+        when q = '(' 
+         and lag(q) over (partition by start_pos, bracket_level 
+                              order by start_pos, bracket_level, end_pos) = ']'
+        then 'ok'          
+        when q = ']' 
+         and lag(q) over (partition by start_pos, bracket_level 
+                              order by start_pos, bracket_level, end_pos) = '['
+        then 'ok'
+        when q = '[' 
+         and lag(q) over (partition by start_pos, bracket_level 
+                              order by start_pos, bracket_level, end_pos) = ']'
+        then 'ok'
+        when q = '[' 
+         and lag(q) over (partition by start_pos, bracket_level 
+                              order by start_pos, bracket_level, end_pos) = ')'
+        then 'ok'
+        when lag(q) over (partition by start_pos, bracket_level 
+                              order by start_pos, bracket_level, end_pos) is null
+         and bracket_level > 0
+        then 'ok'
+        else 'not ok!'
+       end status    
+  from brackets_comb bc  

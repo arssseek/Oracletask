@@ -1,0 +1,47 @@
+5)
+SELECT DISTINCT c1.last_name,
+    CASE
+        WHEN c1.start_date <= c2.start_date THEN c2.start_date
+        WHEN c2.start_date <= c1.start_date THEN c1.start_date
+    END AS START_DATE,
+     CASE
+        WHEN c1.end_date <= c2.end_date THEN c1.end_date
+        WHEN c2.end_date <= c1.end_date THEN c2.end_date
+    END AS END_DATE
+    FROM CVS c1 JOIN cvs c2 ON 
+c1.last_name = c2.last_name AND c1.company <> c2.company
+AND (c1.start_date <= c2.end_date AND c2.start_date <= c1.end_date)
+
+
+
+10)
+SELECT DISTINCT EXTRACT(YEAR FROM hire_date) as year, EXTRACT(MONTH FROM hire_date) AS month, 
+COUNT(*) OVER(PARTITION BY(EXTRACT(YEAR FROM hire_date)*12 +  EXTRACT(MONTH FROM hire_date))) AS empl_for_month FROM employees
+ORDER BY EXTRACT(YEAR FROM hire_date), EXTRACT(MONTH FROM hire_date)
+
+
+
+9)
+SELECT level, last_name, first_name, employee_id, manager_id
+FROM employees
+WHERE level = 3
+START WITH manager_id is null
+CONNECT BY PRIOR employee_id = manager_id
+
+
+8)
+WITH dat(new_date) as (
+    SELECT SYSDATE
+    FROM dual
+    UNION ALL 
+    SELECT new_date + NUMTODSINTERVAL(1,'DAY')
+    FROM dat
+    WHERE new_date < TO_DATE('31-12-2022','DD-MM-YYYY') 
+    
+)
+SELECT * FROM dat
+почемуто не фурычит 
+
+
+3)Переделал
+SELECT hire_date, salary, SUM(salary) OVER (ORDER BY hire_date ROWS BETWEEN 2 Preceding AND 2 Following ) FROM employees

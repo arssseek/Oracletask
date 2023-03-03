@@ -1,0 +1,7 @@
+SELECT * FROM(
+    SELECT employee_id, EXTRACT(MONTH FROM hire_date) AS mnth, EXTRACT(YEAR FROM hire_date) as year FROM employees
+)
+PIVOT(
+    COUNT(employee_id)
+    FOR mnth IN (1,2,3,4,5,6,7,8,9,10,11,12)
+)

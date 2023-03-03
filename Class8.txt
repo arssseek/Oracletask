@@ -1,0 +1,149 @@
+CREATE TABLE logs(
+Times TIMESTAMP,
+Err_name NUMBER
+);
+
+
+CREATE TABLE err(
+err_c NUMBER,
+err_lan NUMBER,
+err_tx VARCHAR2(150));
+INSERT INTO err VALUES(1,1,'Ошибка отдела');
+INSERT INTO err VALUES(1,2,'Department error');
+INSERT INTO err VALUES(1,3,'Памылка аддзела');
+INSERT INTO err VALUES(1,4,'Abteilungsfehler');
+INSERT INTO err VALUES(2,1,'Пользователь не найден');
+INSERT INTO err VALUES(2,2,'User is not found');
+INSERT INTO err VALUES(2,3,'Карыстальнік не знойдзены');
+INSERT INTO err VALUES(2,4,'Benutzer wurde nicht gefunden');
+
+CREATE OR REPLACE PACKAGE logic AS
+    e_id NUMBER;
+    err_lang NUMBER := 1;
+    PROCEDURE dob 
+    (
+    firstn VARCHAR2,
+    lastn VARCHAR2,
+    ema VARCHAR2,
+    p_n VARCHAR2,
+    h_d DATE,
+    j_id VARCHAR2,
+    sal NUMBER);
+    PROCEDURE udal 
+    (
+    nuum NUMBER
+    
+    );
+    PROCEDURE obnov
+    (
+    nsal NUMBER,
+    nuum NUMBER
+    );
+    PROCEDURE perev
+     (
+    ndep NUMBER,
+    nuum NUMBER
+    );
+    FUNCTION dep(
+    dep_id NUMBER)
+    RETURN VARCHAR2;
+END logic;
+/
+CREATE OR REPLACE PACKAGE BODY logic AS 
+    PROCEDURE dob 
+    (
+    firstn VARCHAR2,
+    lastn VARCHAR2,
+    ema VARCHAR2,
+    p_n VARCHAR2,
+    h_d DATE,
+    j_id VARCHAR2,
+    sal NUMBER)
+    IS
+    BEGIN
+        SELECT MAX(employee_id) INTO e_id
+        FROM employees;
+        INSERT INTO employees(employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary)VALUES((e_id + 1),firstn,lastn,ema,p_n,h_d,j_id,sal);
+    END dob;
+    PROCEDURE udal 
+    (
+    nuum NUMBER
+    )
+    IS
+    user_err EXCEPTION;
+    ertx VARCHAR2(250);
+    BEGIN
+        SELECT MAX(employee_id) INTO e_id
+        FROM employees;
+        IF nuum <= e_id THEN
+        DELETE FROM employees WHERE employee_id = nuum;
+        ELSE RAISE user_err;
+        END IF;
+    EXCEPTION 
+    WHEN user_err THEN 
+    INSERT INTO logs VALUES(SYSDATE,2);
+    SELECT err_tx INTO ertx FROM err WHERE err_c = 2 AND err_lan = err_lang;
+    Dbms_output.put_line(ertx);
+    END udal;
+    PROCEDURE obnov
+    (
+    nsal NUMBER,
+    nuum NUMBER
+    )
+    IS
+    BEGIN
+        UPDATE employees
+        SET salary = nsal
+        WHERE employee_id = nuum;
+    END obnov;
+    PROCEDURE perev
+     (
+    ndep NUMBER,
+    nuum NUMBER
+    )
+    IS
+    BEGIN
+        UPDATE employees
+        SET department_id = ndep
+        WHERE employee_id = nuum;
+    END perev;
+    FUNCTION dep(
+    dep_id NUMBER)
+    RETURN VARCHAR2
+    IS
+    dep_name VARCHAR2(15);
+    dep_err EXCEPTION;
+    ertx VARCHAR2(250);
+    BEGIN
+        SELECT DISTINCT department_name INTO dep_name FROM departments
+        WHERE department_id = dep_id;
+        IF dep_name <> '' THEN
+        RETURN dep_name;
+        ELSE RAISE dep_err;
+        END IF;
+    EXCEPTION
+    WHEN dep_err THEN 
+    INSERT INTO logs VALUES(SYSDATE,1);
+    SELECT err_tx INTO ertx FROM err WHERE err_c = 1 AND err_lan = err_lang;
+    Dbms_output.put_line(ertx);
+    END dep;
+END logic;
+/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

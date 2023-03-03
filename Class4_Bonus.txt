@@ -1,0 +1,173 @@
+1. сумарное количество long-form просмотренных больше 1 минуты(кумулятивно на текущий момент)
+2. сумарное количество movie просмотренных больше 1 минуты(кумулятивно на текущий момент)
+3. сумарное количество short-form просмотренных больше 1 минуты(либо целиком, если длительность меньше 1 минуты)(кумулятивно на текущий момент)
+4. сумарное количество long-form просмотренных больше 80%(кумулятивно на текущий момент)
+5. сумарное количество long-form просмотренных больше 50%(кумулятивно на текущий момент)
+6. сумарное количество movie просмотренных больше 80%(кумулятивно на текущий момент)
+7. сумарное количество movie просмотренных больше 50%(кумулятивно на текущий момент)
+
+8. количество просмотренных минут long-form просмотренных больше 1 минуты(кумулятивно на текущий момент)
+9. количество просмотренных минут movie просмотренных больше 1 минуты(кумулятивно на текущий момент)
+10. количество просмотренных минут short-form просмотренных больше 1 минуты(либо целиком, если длительность меньше 1 минуты)(кумулятивно на текущий момент)
+11. количество просмотренных минут long-form просмотренных больше 80%(кумулятивно на текущий момент)
+12. количество просмотренных минут long-form просмотренных больше 50%(кумулятивно на текущий момент)
+13. количество просмотренных минут movie просмотренных больше 80%(кумулятивно на текущий момент)
+14. количество просмотренных минут movie просмотренных больше 50%(кумулятивно на текущий момент)
+
+15. количество дней где были просмотры long-form просмотренных больше 1 минуты(за день)
+16. количество дней где были просмотры movie просмотренных больше 1 минуты(за день)
+17. количество дней где были просмотры short-form просмотренных больше 1 минуты(либо целиком, если длительность меньше 1 минуты)(за день)
+18. количество дней где были просмотры long-form просмотренных больше 80%(за день)
+19. количество дней где были просмотры long-form просмотренных больше 50%(за день)
+20. количество дней где были просмотры movie просмотренных больше 80%(за день)
+21. количество дней где были просмотры movie просмотренных больше 50%(за день)
+
+22 маскимальное количество непрерывных дней в которые были просмотры к текущей дате
+23 маскимальное количество непрерывных дней в которые небыло просмотров к текущей дате
+
+
+
+
+--1
+SELECT COUNT(*)  FROM content a
+JOIN subscription_viewing b ON a.episode_id = b.episode_id AND b.PLAYTIME_SEC > 60
+WHERE EPISODE_TYPE_CODE in ('EPISODE','MOVIE')
+
+
+--2 
+SELECT COUNT(*)  FROM content a
+JOIN subscription_viewing b ON a.episode_id = b.episode_id AND b.PLAYTIME_SEC > 60
+WHERE EPISODE_TYPE_CODE = 'MOVIE'
+
+
+--3 
+SELECT COUNT(*)  FROM content a
+JOIN subscription_viewing b ON a.episode_id = b.episode_id AND (b.PLAYTIME_SEC > 60 OR b.playtime_sec = a.episode_length)
+WHERE EPISODE_TYPE_CODE NOT IN ('EPISODE','MOVIE')
+
+
+--4
+SELECT COUNT(*)  FROM content a
+JOIN subscription_viewing b ON a.episode_id = b.episode_id AND (b.playtime_sec / a.episode_length) > 0.8
+WHERE EPISODE_TYPE_CODE IN ('EPISODE','MOVIE')
+
+
+--5
+SELECT COUNT(*)  FROM content a
+JOIN subscription_viewing b ON a.episode_id = b.episode_id AND (b.playtime_sec / a.episode_length) > 0.5
+WHERE EPISODE_TYPE_CODE IN ('EPISODE','MOVIE')
+
+
+--6
+SELECT COUNT(*)  FROM content a
+JOIN subscription_viewing b ON a.episode_id = b.episode_id AND (b.playtime_sec / a.episode_length) > 0.8
+WHERE EPISODE_TYPE_CODE = 'MOVIE' 
+
+
+--7
+SELECT COUNT(*)  FROM content a
+JOIN subscription_viewing b ON a.episode_id = b.episode_id AND (b.playtime_sec / a.episode_length) > 0.5
+WHERE EPISODE_TYPE_CODE = 'MOVIE'
+
+
+--8
+SELECT PLAYTIME_SEC/60  FROM content a
+JOIN subscription_viewing b ON a.episode_id = b.episode_id AND b.PLAYTIME_SEC > 60
+WHERE EPISODE_TYPE_CODE in ('EPISODE','MOVIE')
+
+
+--9
+SELECT PLAYTIME_SEC/60  FROM content a
+JOIN subscription_viewing b ON a.episode_id = b.episode_id AND b.PLAYTIME_SEC > 60
+WHERE EPISODE_TYPE_CODE = 'MOVIE'
+
+
+--10
+SELECT PLAYTIME_SEC/60  FROM content a
+JOIN subscription_viewing b ON a.episode_id = b.episode_id AND (b.PLAYTIME_SEC > 60 OR b.playtime_sec = a.episode_length)
+WHERE EPISODE_TYPE_CODE NOT in ('EPISODE','MOVIE')
+
+
+--11
+SELECT playtime_sec/60 FROM content a
+JOIN subscription_viewing b ON a.episode_id = b.episode_id AND (b.playtime_sec / a.episode_length) > 0.8
+WHERE EPISODE_TYPE_CODE IN ('EPISODE','MOVIE')
+
+
+--12
+SELECT playtime_sec/60 FROM content a
+JOIN subscription_viewing b ON a.episode_id = b.episode_id AND (b.playtime_sec / a.episode_length) > 0.5
+WHERE EPISODE_TYPE_CODE IN ('EPISODE','MOVIE')
+
+
+--13
+SELECT playtime_sec/60  FROM content a
+JOIN subscription_viewing b ON a.episode_id = b.episode_id AND (b.playtime_sec / a.episode_length) > 0.8
+WHERE EPISODE_TYPE_CODE = 'MOVIE' 
+
+
+
+--14
+SELECT playtime_sec/60  FROM content a
+JOIN subscription_viewing b ON a.episode_id = b.episode_id AND (b.playtime_sec / a.episode_length) > 0.5
+WHERE EPISODE_TYPE_CODE = 'MOVIE' 
+
+
+
+
+--15
+SELECT EXTRACT(DAY FROM SUBSCRIPTION_END_DT-SUBSCRIPTION_START_DT)  FROM subscription_viewing b
+JOIN content a ON a.episode_id = b.episode_id AND b.playtime_sec  > 60
+JOIN subscription c ON c.subscription_id = b.subscription_id
+WHERE EPISODE_TYPE_CODE in ('EPISODE','MOVIE')
+
+
+
+--16
+SELECT EXTRACT(DAY FROM SUBSCRIPTION_END_DT-SUBSCRIPTION_START_DT)  FROM subscription_viewing b
+JOIN content a ON a.episode_id = b.episode_id AND b.playtime_sec  > 60
+JOIN subscription c ON c.subscription_id = b.subscription_id
+WHERE EPISODE_TYPE_CODE = 'MOVIE'
+
+
+
+--17
+SELECT EXTRACT(DAY FROM SUBSCRIPTION_END_DT-SUBSCRIPTION_START_DT)  FROM subscription_viewing b
+JOIN content a ON a.episode_id = b.episode_id AND (b.PLAYTIME_SEC > 60 OR b.playtime_sec = a.episode_length)
+JOIN subscription c ON c.subscription_id = b.subscription_id
+WHERE EPISODE_TYPE_CODE NOT in ('EPISODE','MOVIE')
+
+
+
+--18
+SELECT EXTRACT(DAY FROM SUBSCRIPTION_END_DT-SUBSCRIPTION_START_DT)  FROM subscription_viewing b
+JOIN content a ON a.episode_id = b.episode_id AND (b.playtime_sec / a.episode_length) > 0.8
+JOIN subscription c ON c.subscription_id = b.subscription_id
+WHERE EPISODE_TYPE_CODE  in ('EPISODE','MOVIE')
+
+
+--19
+SELECT EXTRACT(DAY FROM SUBSCRIPTION_END_DT-SUBSCRIPTION_START_DT)  FROM subscription_viewing b
+JOIN content a ON a.episode_id = b.episode_id AND (b.playtime_sec / a.episode_length) > 0.5
+JOIN subscription c ON c.subscription_id = b.subscription_id
+WHERE EPISODE_TYPE_CODE  in ('EPISODE','MOVIE')
+
+
+--20
+SELECT EXTRACT(DAY FROM SUBSCRIPTION_END_DT-SUBSCRIPTION_START_DT)  FROM subscription_viewing b
+JOIN content a ON a.episode_id = b.episode_id AND (b.playtime_sec / a.episode_length) > 0.8
+JOIN subscription c ON c.subscription_id = b.subscription_id
+WHERE EPISODE_TYPE_CODE = 'MOVIE' 
+
+
+
+--21
+SELECT EXTRACT(DAY FROM SUBSCRIPTION_END_DT-SUBSCRIPTION_START_DT)  FROM subscription_viewing b
+JOIN content a ON a.episode_id = b.episode_id AND (b.playtime_sec / a.episode_length) > 0.5
+JOIN subscription c ON c.subscription_id = b.subscription_id
+WHERE EPISODE_TYPE_CODE = 'MOVIE'
+
+
+
+--22
+--23

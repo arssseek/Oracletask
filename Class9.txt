@@ -1,0 +1,54 @@
+
+CREATE OR REPLACE PROCEDURE inser 
+    (
+    d_id NUMBER,
+    n1 VARCHAR2,
+    n2 VARCHAR2,
+    n3 VARCHAR2)
+    IS
+    pragma autonomous_transaction;
+    e_id INTEGER;
+    BEGIN
+        SELECT MAX(id_emp) + 1 INTO e_id
+        FROM cls;
+        INSERT INTO cls VALUES(e_id,d_id,n1,n2,n3);
+        COMMIT;
+    END inser;
+
+
+CREATE OR REPLACE PROCEDURE inser_log 
+    (
+    sysd TIMESTAMP,
+    conststr VARCHAR2,
+    errcheck NUMBER)
+    IS
+    pragma autonomous_transaction;
+    BEGIN
+        INSERT INTO logg VALUES(sysd,conststr,errcheck);
+        COMMIT;
+    END inser_log;
+
+
+CREATE OR REPLACE TRIGGER tri
+    BEFORE INSERT OR UPDATE ON cls
+    FOR EACH ROW 
+    DECLARE
+
+        mx INTEGER;
+        cou INTEGER;
+        er EXCEPTION;
+    BEGIN
+        SELECT COUNT(*) INTO cou FROM cls
+        WHERE name2 = :NEW.name2;
+        SELECT MAX(id_emp) INTO mx FROM cls;
+        IF cou > 4  THEN 
+            inser_log(SYSDATE, 'Log',0);
+        ELSE 
+            inser_log(SYSDATE, 'Log',1);
+            RAISE er;
+        END IF;
+        EXCEPTION
+        WHEN er THEN 
+            dbms_output.put_line('Value Error');
+            RAISE_APPLICATION_ERROR(-20003, 'Bad new, you have error');
+    END;

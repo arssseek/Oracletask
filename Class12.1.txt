@@ -1,0 +1,28 @@
+DROP PROCEDURE INSERT_PROCED;
+CREATE OR REPLACE PROCEDURE INSERT_PROCED IS
+    i NUMBER;
+    TYPE descount IS TABLE OF T_DISCOUNT%ROWTYPE;
+    des_tab descount;
+    cnt NUMBER;
+        BEGIN 
+            i := 0;  
+            SELECT COUNT(*) INTO cnt FROM (
+                SELECT COUNT(n_client) FROM t_sales GROUP BY n_client);
+            SELECT DISTINCT n_client, SUM(amt) OVER (PARTITION BY n_client) , MAX(trn_date) OVER (PARTITION BY n_client), 
+            SUM(amt) OVER (PARTITION BY n_client) ,
+                CASE 
+                        WHEN SUM(amt) OVER (PARTITION BY n_client) < 1000 THEN 0
+                        WHEN SUM(amt) OVER (PARTITION BY n_client) < 10000 THEN 2
+                        WHEN SUM(amt) OVER (PARTITION BY n_client) < 50000  THEN 4
+                        WHEN SUM(amt) OVER (PARTITION BY n_client) > 50000  THEN 7                     
+                    END BULK COLLECT INTO des_tab FROM t_sales;
+            LOOP 
+            INSERT INTO t_discount VALUES des_tab(i);
+            EXIT WHEN i = cnt;
+                i := i + 1;
+            END LOOP;
+END;
+
+BEGIN
+insert_proced();
+END;

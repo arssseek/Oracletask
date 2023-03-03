@@ -1,0 +1,68 @@
+1)
+Удалить дубликаты где значения равны, а ROWID одной из строк отличается по какому либо признаку 
+2)Таблица словарь для хранения расшифровки значений чисел
+учесть двухзначные и однозначные числа(1-20)
+
+1)
+CREATE TABLE TRANSL(
+tran VARCHAR2(23),
+nuum NUMBER
+)
+
+
+
+
+INSERT INTO transl (tran, nuum) VALUES ('один ',1);
+INSERT INTO transl (tran, nuum) VALUES ('два ',2);
+INSERT INTO transl (tran, nuum) VALUES ('три ',3);
+INSERT INTO transl (tran, nuum) VALUES ('четыре ',4);
+INSERT INTO transl (tran, nuum) VALUES ('пять ',5);
+INSERT INTO transl (tran, nuum) VALUES ('шесть ',6);
+INSERT INTO transl (tran, nuum) VALUES ('семь ',7);
+INSERT INTO transl (tran, nuum) VALUES ('восемь ',8);
+INSERT INTO transl (tran, nuum) VALUES ('девять ',9);
+INSERT INTO transl (tran, nuum) VALUES ('десять ',10);
+INSERT INTO transl (tran, nuum) VALUES ('одинадцать ',11);
+INSERT INTO transl (tran, nuum) VALUES ('двенадцать ',12);
+INSERT INTO transl (tran, nuum) VALUES ('тринадцать ',13);
+INSERT INTO transl (tran, nuum) VALUES ('четырнадцать ',14);
+INSERT INTO transl (tran, nuum) VALUES ('пятнадцать ',15);
+INSERT INTO transl (tran, nuum) VALUES ('шеснадцать ',16);
+INSERT INTO transl (tran, nuum) VALUES ('семьнадцать ',17);
+INSERT INTO transl (tran, nuum) VALUES ('восемьнадцать ',18);
+INSERT INTO transl (tran, nuum) VALUES ('девятнадцать ',19);
+INSERT INTO transl (tran, nuum) VALUES ('двадцать ',20);
+INSERT INTO transl (tran, nuum) VALUES ('тридцать ',30);
+INSERT INTO transl (tran, nuum) VALUES ('сорок ',40);
+INSERT INTO transl (tran, nuum) VALUES ('пятьдесят ',50);
+INSERT INTO transl (tran, nuum) VALUES ('шестьдесят ',60);
+INSERT INTO transl (tran, nuum) VALUES ('восемьдесят ',80);
+INSERT INTO transl (tran, nuum) VALUES ('семьдесят ',70);
+INSERT INTO transl (tran, nuum) VALUES ('девяносто ',90);
+INSERT INTO transl (tran, nuum) VALUES ('сто ',100);
+INSERT INTO transl (tran, nuum) VALUES ('двесте ',200);
+INSERT INTO transl (tran, nuum) VALUES ('триста ',300);
+INSERT INTO transl (tran, nuum) VALUES ('четыресто ',400);
+INSERT INTO transl (tran, nuum) VALUES ('пятьсот ',500);
+INSERT INTO transl (tran, nuum) VALUES ('шестьсот ',600);
+INSERT INTO transl (tran, nuum) VALUES ('семьсот ',700);
+INSERT INTO transl (tran, nuum) VALUES ('восемьсот ',800);
+INSERT INTO transl (tran, nuum) VALUES ('девятьсот ',900);
+
+
+
+
+SELECT DISTINCT
+    (SELECT tran FROM transl WHERE nuum = 111-MOD(111,100))||
+    CASE   
+        WHEN MOD(111,100) > 20 THEN (SELECT tran FROM transl WHERE nuum = (MOD(111,100) - MOD(111,10)))
+    END|| 
+    (SELECT tran FROM transl WHERE nuum = MOD(111,20)) AS TRANSL
+FROM transl;
+
+
+2)
+DELETE FROM employees emp1
+WHERE EXISTS (
+SELECT * FROM employees emp2 WHERE emp2.employee_id = emp1.employee_id AND emp2.ROWID < emp1.ROWID);
+
